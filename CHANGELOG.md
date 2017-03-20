@@ -19,7 +19,7 @@ at anytime.
   *
 
 ### Fixed
-  *
+  * Create download directory if it doesn't exist
   *
   *
 
