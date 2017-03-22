@@ -19,7 +19,9 @@ log = logging.getLogger(__name__)
 
 class DaemonServer(object):
     def __init__(self, analytics_manager=None):
+        self._api = None
         self.root = None
+        self.server_port = None
         self.analytics_manager = analytics_manager
 
     def _setup_server(self, use_auth):
@@ -34,11 +36,11 @@ class DaemonServer(object):
         lbrynet_server.requestFactory = DaemonRequest
 
         try:
-            reactor.listenTCP(
+            self.server_port = reactor.listenTCP(
                 conf.settings['api_port'], lbrynet_server, interface=conf.settings['api_host'])
         except error.CannotListenError:
             log.info('Daemon already running, exiting app')
-            sys.exit(1)
+            raise
 
         return defer.succeed(True)
 
@@ -47,6 +49,12 @@ class DaemonServer(object):
         yield self._setup_server(use_auth)
         yield self._api.setup(launch_ui)
 
+    @defer.inlineCallbacks
+    def stop(self):
+        if self._api is not None:
+            yield self._api._shutdown()
+        if self.server_port is not None:
+            yield self.server_port.stopListening()
 
 def get_site_base(use_auth, root):
     if use_auth:
